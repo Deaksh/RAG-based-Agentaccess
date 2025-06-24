@@ -50,6 +50,8 @@ def get_vectorstore_for_role(role: str):
 
 
 def get_vectorstore(filter_metadata=None):
+    import os
+    from qdrant_client.http.models import Distance, VectorParams
     # Try to use Qdrant Cloud if ENV vars are set, else fallback to local
     QDRANT_URL = os.getenv("https://27cf9acc-ae7c-4af6-82ba-373a7e1d4ea5.europe-west3-0.gcp.cloud.qdrant.io")
     QDRANT_API_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0._qAA8CcvEzwDgf9ag-dZNPnFQGbA3xDYs13g9sIt86w")
@@ -63,6 +65,19 @@ def get_vectorstore(filter_metadata=None):
         client = QdrantClient(path=QDRANT_PATH)
 
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+
+    # ❗ Ensure collection exists
+    existing_collections = [c.name for c in client.get_collections().collections]
+    if QDRANT_COLLECTION not in existing_collections:
+        print(f"📁 Creating missing collection: {QDRANT_COLLECTION}")
+        client.recreate_collection(
+            collection_name=QDRANT_COLLECTION,
+            vectors_config=VectorParams(
+                size=embedding_model.embed_query("test").__len__(),  # typically 384 for MiniLM
+                distance=Distance.COSINE
+            )
+        )
+        # Optionally, load your actual docs and add embeddings here if needed
 
     vectordb = QdrantVectorStore(
         client=client,
