@@ -4,6 +4,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client.models import Filter, FieldCondition, MatchValue
+import tempfile
+from qdrant_client import QdrantClient
 
 QDRANT_COLLECTION = "finrolebot"
 QDRANT_PATH = "/Users/deakshshetty/Documents/RAG-based-role-access/embeddings/qdrant_local"
@@ -53,6 +55,7 @@ def get_vectorstore_for_role(role: str):
 
 
 def get_vectorstore(filter_metadata=None):
+    QDRANT_PATH = tempfile.gettempdir() + "/qdrant"  # safe path for Streamlit Cloud
     client = QdrantClient(path=QDRANT_PATH)
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
 
