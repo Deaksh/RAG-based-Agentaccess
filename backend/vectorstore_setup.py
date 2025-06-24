@@ -51,8 +51,8 @@ def get_vectorstore_for_role(role: str):
 
 def get_vectorstore(filter_metadata=None):
     # Try to use Qdrant Cloud if ENV vars are set, else fallback to local
-    QDRANT_URL = os.getenv("QDRANT_URL")
-    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+    QDRANT_URL = os.getenv("https://27cf9acc-ae7c-4af6-82ba-373a7e1d4ea5.europe-west3-0.gcp.cloud.qdrant.io")
+    QDRANT_API_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0._qAA8CcvEzwDgf9ag-dZNPnFQGbA3xDYs13g9sIt86w")
 
     if QDRANT_URL and QDRANT_API_KEY:
         print("🚀 Using Qdrant Cloud client")
