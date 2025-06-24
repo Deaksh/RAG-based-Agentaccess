@@ -1,7 +1,10 @@
-# Ignore Python virtual environments
-venv/
+# Ignore virtual environments and large/mistaken folders
 ragenv/
-.env/
+.venv/
+env/
+RAG-based-Agentaccess.git/
+
+
 
 # Ignore Python cache files
 __pycache__/
