@@ -45,3 +45,4 @@ package-lock.json
 
 # VS Code project settings (optional)
 .vscode/
+.env
