@@ -1,0 +1,44 @@
+# Ignore Python virtual environments
+venv/
+ragenv/
+.env/
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*.so
+
+# Ignore Jupyter/IPython notebook checkpoints
+.ipynb_checkpoints
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore compiled files
+*.pkl
+*.db
+*.sqlite
+*.dll
+*.dylib
+*.exe
+
+# Ignore Qdrant local data if not meant to share
+embeddings/qdrant_local/
+
+# Streamlit config cache (optional)
+.streamlit/
+
+# Ignore temporary files
+*.bak
+*.tmp
+
+# Node/npm (if ever used for UI)
+node_modules/
+package-lock.json
+
+# VS Code project settings (optional)
+.vscode/
