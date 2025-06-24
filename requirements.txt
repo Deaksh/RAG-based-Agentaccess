@@ -4,7 +4,7 @@ langchain-community==0.0.38
 langchain-core==0.1.50
 langchainhub==0.1.15
 langchain-groq==0.1.2
-langchain-qdrant==0.1.7
+langchain-qdrant==0.1.4
 sentence-transformers==2.7.0
 qdrant-client==1.8.0
 python-dotenv==1.0.1
