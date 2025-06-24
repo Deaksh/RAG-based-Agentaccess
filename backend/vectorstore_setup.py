@@ -1,27 +1,23 @@
 # backend/vectorstore_setup.py
 
+import os
+import tempfile
 from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client.models import Filter, FieldCondition, MatchValue
-import tempfile
-from qdrant_client import QdrantClient
 
 QDRANT_COLLECTION = "finrolebot"
-QDRANT_PATH = "/Users/deakshshetty/Documents/RAG-based-role-access/embeddings/qdrant_local"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
-
-
-from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 def get_vectorstore_for_role(role: str):
     role = role.lower()
 
     # C-level roles get access to all documents (no filter)
-    c_level_roles = ["ceo", "cxo", "chief executive officer", "chief", "executive","c-level","C-LEVEL"]
+    c_level_roles = ["ceo", "cxo", "chief executive officer", "chief", "executive", "c-level", "C-LEVEL"]
 
     if role in c_level_roles:
-        filter_ = None  # No filter means access all
+        filter_ = None
     else:
         # For HR, allow access to hr + general
         if role == "hr":
@@ -29,7 +25,7 @@ def get_vectorstore_for_role(role: str):
         else:
             allowed_roles = [role]
 
-        # Build filter with 'must' containing multiple roles if needed
+        # Build filter condition
         if len(allowed_roles) == 1:
             filter_ = Filter(
                 must=[
@@ -44,7 +40,7 @@ def get_vectorstore_for_role(role: str):
                 must=[
                     FieldCondition(
                         key="metadata.role",
-                        values=allowed_roles
+                        match=MatchValue(value=allowed_roles)
                     )
                 ]
             )
@@ -53,10 +49,19 @@ def get_vectorstore_for_role(role: str):
     return get_vectorstore(filter_metadata=filter_)
 
 
-
 def get_vectorstore(filter_metadata=None):
-    QDRANT_PATH = tempfile.gettempdir() + "/qdrant"  # safe path for Streamlit Cloud
-    client = QdrantClient(path=QDRANT_PATH)
+    # Try to use Qdrant Cloud if ENV vars are set, else fallback to local
+    QDRANT_URL = os.getenv("QDRANT_URL")
+    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+    if QDRANT_URL and QDRANT_API_KEY:
+        print("🚀 Using Qdrant Cloud client")
+        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    else:
+        print("🧪 Using local Qdrant client (tempfile path)")
+        QDRANT_PATH = tempfile.gettempdir() + "/qdrant"
+        client = QdrantClient(path=QDRANT_PATH)
+
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
 
     vectordb = QdrantVectorStore(
