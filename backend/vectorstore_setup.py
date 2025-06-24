@@ -1,83 +1,52 @@
 # backend/vectorstore_setup.py
 
-import os
-import tempfile
 from langchain_huggingface import HuggingFaceEmbeddings
-from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 QDRANT_COLLECTION = "finrolebot"
+QDRANT_URL = os.getenv("QDRANT_URL")  # Set this in Streamlit Cloud Secrets or your .env
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 def get_vectorstore_for_role(role: str):
     role = role.lower()
-
-    # C-level roles get access to all documents (no filter)
-    c_level_roles = ["ceo", "cxo", "chief executive officer", "chief", "executive", "c-level", "C-LEVEL"]
+    c_level_roles = ["ceo", "cxo", "chief executive officer", "chief", "executive","c-level","C-LEVEL"]
 
     if role in c_level_roles:
         filter_ = None
     else:
-        # For HR, allow access to hr + general
-        if role == "hr":
-            allowed_roles = ["hr", "general"]
-        else:
-            allowed_roles = [role]
+        allowed_roles = ["hr", "general"] if role == "hr" else [role]
 
-        # Build filter condition
-        if len(allowed_roles) == 1:
-            filter_ = Filter(
-                must=[
-                    FieldCondition(
-                        key="metadata.role",
-                        match=MatchValue(value=allowed_roles[0])
-                    )
-                ]
-            )
-        else:
-            filter_ = Filter(
-                must=[
-                    FieldCondition(
-                        key="metadata.role",
-                        match=MatchValue(value=allowed_roles)
-                    )
-                ]
-            )
+        filter_ = Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.role",
+                    match=MatchValue(value=allowed_roles[0])
+                )
+            ]
+        ) if len(allowed_roles) == 1 else Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.role",
+                    values=allowed_roles
+                )
+            ]
+        )
 
     print("🔎 Role Filter:", filter_)
     return get_vectorstore(filter_metadata=filter_)
 
-
 def get_vectorstore(filter_metadata=None):
-    import os
-    from qdrant_client.http.models import Distance, VectorParams
-    # Try to use Qdrant Cloud if ENV vars are set, else fallback to local
-    QDRANT_URL = os.getenv("https://27cf9acc-ae7c-4af6-82ba-373a7e1d4ea5.europe-west3-0.gcp.cloud.qdrant.io")
-    QDRANT_API_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0._qAA8CcvEzwDgf9ag-dZNPnFQGbA3xDYs13g9sIt86w")
-
-    if QDRANT_URL and QDRANT_API_KEY:
-        print("🚀 Using Qdrant Cloud client")
-        client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-    else:
-        print("🧪 Using local Qdrant client (tempfile path)")
-        QDRANT_PATH = tempfile.gettempdir() + "/qdrant"
-        client = QdrantClient(path=QDRANT_PATH)
-
+    client = QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
+    )
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-
-    # ❗ Ensure collection exists
-    existing_collections = [c.name for c in client.get_collections().collections]
-    if QDRANT_COLLECTION not in existing_collections:
-        print(f"📁 Creating missing collection: {QDRANT_COLLECTION}")
-        client.recreate_collection(
-            collection_name=QDRANT_COLLECTION,
-            vectors_config=VectorParams(
-                size=embedding_model.embed_query("test").__len__(),  # typically 384 for MiniLM
-                distance=Distance.COSINE
-            )
-        )
-        # Optionally, load your actual docs and add embeddings here if needed
 
     vectordb = QdrantVectorStore(
         client=client,
