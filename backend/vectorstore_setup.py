@@ -42,11 +42,29 @@ def get_vectorstore_for_role(role: str):
     return get_vectorstore(filter_metadata=filter_)
 
 def get_vectorstore(filter_metadata=None):
+    from qdrant_client.models import VectorParams
+
     client = QdrantClient(
-        url=QDRANT_URL,
-        api_key=QDRANT_API_KEY,
+        url=os.environ["QDRANT_URL"],           # Set via Streamlit secrets
+        api_key=os.environ["QDRANT_API_KEY"]    # Set via Streamlit secrets
     )
+
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+
+    # Embedding dimension for MiniLM is 384
+    vector_size = 384
+
+    # Check if collection exists
+    existing_collections = [col.name for col in client.get_collections().collections]
+    if QDRANT_COLLECTION not in existing_collections:
+        print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
+        client.create_collection(
+            collection_name=QDRANT_COLLECTION,
+            vectors_config=VectorParams(
+                size=vector_size,
+                distance="Cosine",
+            ),
+        )
 
     vectordb = QdrantVectorStore(
         client=client,
