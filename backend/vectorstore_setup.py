@@ -52,8 +52,8 @@ def get_vectorstore(filter_metadata=None):
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
     vector_size = 384  # For MiniLM
 
-    # Check if collection exists
     existing_collections = [col.name for col in client.get_collections().collections]
+
     if QDRANT_COLLECTION not in existing_collections:
         print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
         client.create_collection(
@@ -63,8 +63,8 @@ def get_vectorstore(filter_metadata=None):
                 distance="Cosine",
             ),
         )
-        else:
-        # ✅ Safe check for existing vector config using .dict()
+    else:
+        # Safe check for existing vector config using .dict()
         collection_info = client.get_collection(QDRANT_COLLECTION)
         vector_config = collection_info.dict().get("config", {}).get("params", {})
 
@@ -81,7 +81,6 @@ def get_vectorstore(filter_metadata=None):
                 )
             )
 
-    # 🔁 Ensure this matches the name used above if using named vectors
     vectordb = QdrantVectorStore(
         client=client,
         collection_name=QDRANT_COLLECTION,
@@ -97,4 +96,3 @@ def get_vectorstore(filter_metadata=None):
     )
 
     return retriever
-
