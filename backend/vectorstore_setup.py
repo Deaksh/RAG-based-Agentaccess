@@ -83,7 +83,6 @@ def get_vectorstore(filter_metadata=None):
         client=client,
         collection_name=QDRANT_COLLECTION,
         embedding=embedding_model,
-        vector_name="default",
     )
 
     retriever = vectordb.as_retriever(
