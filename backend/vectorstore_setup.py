@@ -45,14 +45,12 @@ def get_vectorstore(filter_metadata=None):
     from qdrant_client.models import VectorParams
 
     client = QdrantClient(
-        url=os.environ["QDRANT_URL"],           # Set via Streamlit secrets
-        api_key=os.environ["QDRANT_API_KEY"]    # Set via Streamlit secrets
+        url=os.environ["QDRANT_URL"],
+        api_key=os.environ["QDRANT_API_KEY"]
     )
 
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-
-    # Embedding dimension for MiniLM is 384
-    vector_size = 384
+    vector_size = 384  # For MiniLM
 
     # Check if collection exists
     existing_collections = [col.name for col in client.get_collections().collections]
@@ -65,13 +63,33 @@ def get_vectorstore(filter_metadata=None):
                 distance="Cosine",
             ),
         )
+    else:
+        # ✅ Validate existing vector config
+        collection_info = client.get_collection(QDRANT_COLLECTION)
+        vector_config = collection_info.vectors
 
+        if hasattr(vector_config, 'size'):
+            config = vector_config
+        else:
+            config = vector_config.get('default', None)
+
+        if config is None or config.size != vector_size or config.distance != "Cosine":
+            print("⚠️ Collection config mismatch. Recreating collection...")
+            client.recreate_collection(
+                collection_name=QDRANT_COLLECTION,
+                vectors_config=VectorParams(
+                    size=vector_size,
+                    distance="Cosine"
+                )
+            )
+
+    # 🔁 Ensure this matches the name used above if using named vectors
     vectordb = QdrantVectorStore(
-    client=client,
-    collection_name=QDRANT_COLLECTION,
-    embedding=embedding_model,
-    vector_name="default",  # ✅ Add this line
-  )
+        client=client,
+        collection_name=QDRANT_COLLECTION,
+        embedding=embedding_model,
+        vector_name="default"
+    )
 
     retriever = vectordb.as_retriever(
         search_kwargs={
@@ -81,3 +99,4 @@ def get_vectorstore(filter_metadata=None):
     )
 
     return retriever
+
