@@ -67,10 +67,11 @@ def get_vectorstore(filter_metadata=None):
         )
 
     vectordb = QdrantVectorStore(
-        client=client,
-        collection_name=QDRANT_COLLECTION,
-        embedding=embedding_model,
-    )
+    client=client,
+    collection_name=QDRANT_COLLECTION,
+    embedding=embedding_model,
+    vector_name="default",  # ✅ Add this line
+  )
 
     retriever = vectordb.as_retriever(
         search_kwargs={
