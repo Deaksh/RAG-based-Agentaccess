@@ -55,14 +55,20 @@ def get_vectorstore(filter_metadata=None):
     # Check if collection exists
     existing_collections = [col.name for col in client.get_collections().collections]
     if QDRANT_COLLECTION not in existing_collections:
-        print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
-        client.create_collection(
-            collection_name=QDRANT_COLLECTION,
-            vectors_config=VectorParams(
-                size=vector_size,
-                distance="Cosine",
-            ),
-        )
+    print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
+    client.create_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=VectorParams(
+            size=vector_size,
+            distance="Cosine",
+        ),
+    )
+    # ✅ Add this line to allow filtering
+    client.create_payload_index(
+        collection_name=QDRANT_COLLECTION,
+        field_name="metadata.role",
+        field_schema="keyword"
+    )
     else:
         # ✅ Safe check for existing vector config
         collection_info = client.get_collection(QDRANT_COLLECTION)
