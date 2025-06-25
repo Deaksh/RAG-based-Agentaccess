@@ -54,27 +54,30 @@ def get_vectorstore(filter_metadata=None):
 
     # Check if collection exists
     existing_collections = [col.name for col in client.get_collections().collections]
+
     if QDRANT_COLLECTION not in existing_collections:
-    print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
-    client.create_collection(
-        collection_name=QDRANT_COLLECTION,
-        vectors_config=VectorParams(
-            size=vector_size,
-            distance="Cosine",
-        ),
-    )
-    # ✅ Add this line to allow filtering
-    client.create_payload_index(
-        collection_name=QDRANT_COLLECTION,
-        field_name="metadata.role",
-        field_schema="keyword"
-    )
+        print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
+        client.create_collection(
+            collection_name=QDRANT_COLLECTION,
+            vectors_config=VectorParams(
+                size=vector_size,
+                distance="Cosine",
+            ),
+        )
+
+        # ✅ Index the metadata.role field for filtering
+        client.create_payload_index(
+            collection_name=QDRANT_COLLECTION,
+            field_name="metadata.role",
+            field_schema="keyword"
+        )
     else:
-        # ✅ Safe check for existing vector config
+        # 🛡 Optional: Safe check on vector config to avoid mismatch
         collection_info = client.get_collection(QDRANT_COLLECTION)
         vector_config = collection_info.model_dump().get("config", {}).get("params", {}).get("vectors", {})
         existing_size = vector_config.get("size")
         existing_distance = vector_config.get("distance")
+
         if existing_size != vector_size or existing_distance != "Cosine":
             print("⚠️ Collection config mismatch. Recreating collection...")
             client.recreate_collection(
@@ -84,16 +87,18 @@ def get_vectorstore(filter_metadata=None):
                     distance="Cosine"
                 )
             )
+            client.create_payload_index(
+                collection_name=QDRANT_COLLECTION,
+                field_name="metadata.role",
+                field_schema="keyword"
+            )
 
     vectordb = QdrantVectorStore(
-    client=client,
-    collection_name=QDRANT_COLLECTION,
-    embedding=embedding_model,
-    vector_name=""  # ✅ empty string for unnamed vector
-  )
-
-
-    print("👉 Using Qdrant vector_name:", getattr(vectordb, "vector_name", None))
+        client=client,
+        collection_name=QDRANT_COLLECTION,
+        embedding=embedding_model,
+        vector_name="",  # ✅ Empty string for unnamed vector compatibility
+    )
 
     retriever = vectordb.as_retriever(
         search_kwargs={
@@ -103,4 +108,5 @@ def get_vectorstore(filter_metadata=None):
     )
 
     return retriever
+
 
