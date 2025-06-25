@@ -11,6 +11,40 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../back
 from backend.llm_setup import get_qa_chain
 from utils.auth import authenticate_user
 
+import streamlit as st
+from qdrant_client import QdrantClient
+import os
+
+st.title("🛠️ Qdrant Collection Debugger")
+
+QDRANT_COLLECTION = "finrolebot"
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+st.write("### Collection info:")
+collection_info = client.get_collection(QDRANT_COLLECTION)
+st.json(collection_info.model_dump())
+
+st.write("### Sample points from collection:")
+try:
+    points = client.scroll(collection_name=QDRANT_COLLECTION, limit=5)
+    for point in points.points:
+        st.write(f"Point ID: {point.id}")
+        st.json(point.payload)  # This contains your metadata
+except Exception as e:
+    st.error(f"Error fetching points: {e}")
+
+st.write("### Check if 'metadata.role' field exists in payloads")
+try:
+    points = client.scroll(collection_name=QDRANT_COLLECTION, limit=10)
+    roles = [point.payload.get("role") or point.payload.get("metadata", {}).get("role") for point in points.points]
+    st.write(roles)
+except Exception as e:
+    st.error(f"Error reading roles: {e}")
+
+
 st.set_page_config(page_title="FinSolve Assistant", page_icon="💼", layout="wide")
 st.title("💼 FinSolve Role-Based Assistant")
 st.subheader("Login to access your department-specific insights")
