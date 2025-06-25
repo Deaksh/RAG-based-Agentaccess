@@ -33,7 +33,7 @@ if not st.session_state.logged_in:
             if role:
                 st.session_state.logged_in = True
                 st.session_state.email = email
-                st.session_state.role = role
+                st.session_state.role = role.strip().lower()
                 st.success(f"✅ Logged in as {role.upper()}")
                 st.rerun()
             else:
