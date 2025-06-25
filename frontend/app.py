@@ -34,6 +34,7 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.email = email
                 st.session_state.role = role.strip().lower()
+                st.session_state.chat_history = []  # 🚨 Auto-clear previous history
                 st.success(f"✅ Logged in as {role.upper()}")
                 st.rerun()
             else:
