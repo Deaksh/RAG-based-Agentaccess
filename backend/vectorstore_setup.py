@@ -50,11 +50,26 @@ def get_vectorstore(filter_metadata=None):
     )
 
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vector_size = 384  # For MiniLM
+    vector_size = 384  # embedding vector dim
 
     existing_collections = [col.name for col in client.get_collections().collections]
 
-    if QDRANT_COLLECTION not in existing_collections:
+    if QDRANT_COLLECTION in existing_collections:
+        collection_info = client.get_collection(QDRANT_COLLECTION)
+        vector_config = collection_info.dict().get("config", {}).get("params", {})
+
+        if vector_config.get("size") != vector_size or vector_config.get("distance") != "Cosine":
+            print("⚠️ Collection config mismatch. Deleting and recreating collection...")
+            client.delete_collection(QDRANT_COLLECTION)
+
+            client.create_collection(
+                collection_name=QDRANT_COLLECTION,
+                vectors_config=VectorParams(
+                    size=vector_size,
+                    distance="Cosine"
+                )
+            )
+    else:
         print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
         client.create_collection(
             collection_name=QDRANT_COLLECTION,
@@ -63,29 +78,12 @@ def get_vectorstore(filter_metadata=None):
                 distance="Cosine",
             ),
         )
-    else:
-        # Safe check for existing vector config using .dict()
-        collection_info = client.get_collection(QDRANT_COLLECTION)
-        vector_config = collection_info.dict().get("config", {}).get("params", {})
-
-        existing_size = vector_config.get("size")
-        existing_distance = vector_config.get("distance")
-
-        if existing_size != vector_size or existing_distance != "Cosine":
-            print("⚠️ Collection config mismatch. Recreating collection...")
-            client.recreate_collection(
-                collection_name=QDRANT_COLLECTION,
-                vectors_config=VectorParams(
-                    size=vector_size,
-                    distance="Cosine"
-                )
-            )
 
     vectordb = QdrantVectorStore(
         client=client,
         collection_name=QDRANT_COLLECTION,
         embedding=embedding_model,
-        vector_name="default"
+        vector_name="default",
     )
 
     retriever = vectordb.as_retriever(
