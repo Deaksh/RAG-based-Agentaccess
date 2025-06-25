@@ -1,7 +1,7 @@
 from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
-from vectorstore_setup import get_vectorstore_for_role
+from .vectorstore_setup import get_vectorstore_for_role
 from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
 
