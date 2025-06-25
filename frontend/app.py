@@ -77,12 +77,12 @@ else:
     st.success(f"🔐 Logged in as: {st.session_state.email} | Role: {st.session_state.role.upper()}")
     st.write("➡️ Ask department-specific questions below.")
     if st.button("📂 Load Previous Chat History"):
-    loaded_history = load_chat_history(st.session_state.email)
-    if loaded_history:
-        st.session_state.chat_history = loaded_history
-        st.experimental_rerun()
-    else:
-        st.info("No previous chat history found.")
+       loaded_history = load_chat_history(st.session_state.email)
+       if loaded_history:
+          st.session_state.chat_history = loaded_history
+          st.experimental_rerun()
+       else:
+          st.info("No previous chat history found.")
 
 
     for msg in st.session_state.chat_history:
