@@ -14,7 +14,7 @@ QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 def get_vectorstore_for_role(role: str):
-    role = role.lower()
+    role = role.strip().lower()
     c_level_roles = ["ceo", "cxo", "chief executive officer", "chief", "executive","c-level","C-LEVEL"]
 
     if role in c_level_roles:
