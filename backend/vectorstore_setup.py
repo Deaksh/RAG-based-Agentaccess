@@ -4,6 +4,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import MatchValue, MatchAny
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -22,14 +23,24 @@ def get_vectorstore_for_role(role: str):
     else:
         allowed_roles = ["hr", "general"] if role == "hr" else [role]
 
-        filter_ = Filter(
-            must=[
-                FieldCondition(
-                    key="metadata.role",
-                    match=MatchValue(value=r)
-                ) for r in allowed_roles
-            ]
-        )
+        if len(allowed_roles) == 1:
+            filter_ = Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.role",
+                        match=MatchValue(value=allowed_roles[0])
+                    )
+                ]
+            )
+        else:
+            filter_ = Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.role",
+                        match=MatchAny(any=allowed_roles)
+                    )
+                ]
+            )
 
     print("🔎 Role Filter:", filter_)
     return get_vectorstore(filter_metadata=filter_)
