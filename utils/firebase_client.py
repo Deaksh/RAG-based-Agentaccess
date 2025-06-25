@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 
 # Initialize Firebase app only once
 if not firebase_admin._apps:
-    cred = credentials.Certificate('path/to/serviceAccountKey.json')  # Your downloaded Firebase credentials JSON
+    cred = credentials.Certificate('utils/rag-based-assistant-4fc06-firebase-adminsdk-fbsvc-f9a4b89839.json')  # Your downloaded Firebase credentials JSON
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
