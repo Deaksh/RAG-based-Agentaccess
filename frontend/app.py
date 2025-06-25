@@ -10,6 +10,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../back
 
 from backend.llm_setup import get_qa_chain
 from utils.auth import authenticate_user, register_user, list_users
+from utils.firebase_client import save_chat_history, load_chat_history
+
 
 st.set_page_config(page_title="FinSolve Assistant", page_icon="💼", layout="wide")
 st.title("💼 FinSolve Role-Based Assistant")
@@ -74,6 +76,14 @@ elif st.session_state.role == "admin":
 else:
     st.success(f"🔐 Logged in as: {st.session_state.email} | Role: {st.session_state.role.upper()}")
     st.write("➡️ Ask department-specific questions below.")
+    if st.button("📂 Load Previous Chat History"):
+    loaded_history = load_chat_history(st.session_state.email)
+    if loaded_history:
+        st.session_state.chat_history = loaded_history
+        st.experimental_rerun()
+    else:
+        st.info("No previous chat history found.")
+
 
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
@@ -97,6 +107,8 @@ else:
         answer = response["answer"]
         st.chat_message("assistant").markdown(answer)
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        save_chat_history(st.session_state.email, st.session_state.chat_history)
+
 
         access_denied_phrases = [
             "you do not have permission",
