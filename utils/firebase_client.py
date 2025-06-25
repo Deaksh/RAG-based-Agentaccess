@@ -1,18 +1,16 @@
 # utils/firebase_client.py
-
 import json
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
-    # Convert Streamlit secrets TOML block into exact JSON string then load it
-    firebase_config = st.secrets["firebase"]
-    service_account_info = json.loads(json.dumps(firebase_config))  # Ensures full dict -> JSON -> dict format
+    service_account_info = {k: v for k, v in st.secrets["firebase"].items()}
     cred = credentials.Certificate(service_account_info)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
 
 
 def save_chat_history(user_email, chat_history):
