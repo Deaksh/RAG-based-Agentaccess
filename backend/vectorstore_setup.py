@@ -63,17 +63,15 @@ def get_vectorstore(filter_metadata=None):
                 distance="Cosine",
             ),
         )
-    else:
-        # ✅ Validate existing vector config
-        collection_info = client.get_collection(QDRANT_COLLECTION)
-        vector_config = collection_info.vectors
-
-        if hasattr(vector_config, 'size'):
-            config = vector_config
         else:
-            config = vector_config.get('default', None)
+        # ✅ Safe check for existing vector config using .dict()
+        collection_info = client.get_collection(QDRANT_COLLECTION)
+        vector_config = collection_info.dict().get("config", {}).get("params", {})
 
-        if config is None or config.size != vector_size or config.distance != "Cosine":
+        existing_size = vector_config.get("size")
+        existing_distance = vector_config.get("distance")
+
+        if existing_size != vector_size or existing_distance != "Cosine":
             print("⚠️ Collection config mismatch. Recreating collection...")
             client.recreate_collection(
                 collection_name=QDRANT_COLLECTION,
