@@ -79,13 +79,13 @@ def get_vectorstore(filter_metadata=None):
                 )
             )
 
-    # ✅ Explicitly use None for unnamed vectors
     vectordb = QdrantVectorStore(
-        client=client,
-        collection_name=QDRANT_COLLECTION,
-        embedding=embedding_model,
-        vector_name=None  # Important: since you're using unnamed vectors
-    )
+    client=client,
+    collection_name=QDRANT_COLLECTION,
+    embedding=embedding_model,
+    vector_name=""  # ✅ empty string for unnamed vector
+  )
+
 
     print("👉 Using Qdrant vector_name:", getattr(vectordb, "vector_name", None))
 
