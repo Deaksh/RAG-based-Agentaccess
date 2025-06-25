@@ -42,7 +42,7 @@ def get_vectorstore_for_role(role: str):
     return get_vectorstore(filter_metadata=filter_)
 
 def get_vectorstore(filter_metadata=None):
-    from qdrant_client.models import VectorParams
+    from qdrant_client.models import VectorParams, PayloadSchemaType
 
     client = QdrantClient(
         url=os.environ["QDRANT_URL"],
@@ -50,54 +50,34 @@ def get_vectorstore(filter_metadata=None):
     )
 
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vector_size = 384  # For MiniLM
+    vector_size = 384  # MiniLM-L6-v2
 
     # Check if collection exists
     existing_collections = [col.name for col in client.get_collections().collections]
+    collection_exists = QDRANT_COLLECTION in existing_collections
 
-    if QDRANT_COLLECTION not in existing_collections:
+    if not collection_exists:
         print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
         client.create_collection(
             collection_name=QDRANT_COLLECTION,
-            vectors_config=VectorParams(
-                size=vector_size,
-                distance="Cosine",
-            ),
+            vectors_config=VectorParams(size=vector_size, distance="Cosine")
         )
 
-        # ✅ Index the metadata.role field for filtering
+    # ✅ Ensure index exists on `metadata.role`
+    payload_schema = client.get_collection(QDRANT_COLLECTION).payload_schema
+    if "metadata.role" not in payload_schema:
+        print("🔧 Creating payload index for metadata.role...")
         client.create_payload_index(
             collection_name=QDRANT_COLLECTION,
             field_name="metadata.role",
-            field_schema="keyword"
+            field_schema=PayloadSchemaType.KEYWORD
         )
-    else:
-        # 🛡 Optional: Safe check on vector config to avoid mismatch
-        collection_info = client.get_collection(QDRANT_COLLECTION)
-        vector_config = collection_info.model_dump().get("config", {}).get("params", {}).get("vectors", {})
-        existing_size = vector_config.get("size")
-        existing_distance = vector_config.get("distance")
-
-        if existing_size != vector_size or existing_distance != "Cosine":
-            print("⚠️ Collection config mismatch. Recreating collection...")
-            client.recreate_collection(
-                collection_name=QDRANT_COLLECTION,
-                vectors_config=VectorParams(
-                    size=vector_size,
-                    distance="Cosine"
-                )
-            )
-            client.create_payload_index(
-                collection_name=QDRANT_COLLECTION,
-                field_name="metadata.role",
-                field_schema="keyword"
-            )
 
     vectordb = QdrantVectorStore(
         client=client,
         collection_name=QDRANT_COLLECTION,
         embedding=embedding_model,
-        vector_name="",  # ✅ Empty string for unnamed vector compatibility
+        vector_name="",  # Use empty string for unnamed vectors
     )
 
     retriever = vectordb.as_retriever(
@@ -108,5 +88,6 @@ def get_vectorstore(filter_metadata=None):
     )
 
     return retriever
+
 
 
