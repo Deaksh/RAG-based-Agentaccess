@@ -14,8 +14,18 @@ db = firestore.client()
 
 
 def save_chat_history(user_email, chat_history):
-    doc_ref = db.collection("chat_histories").document(user_email)
-    doc_ref.set({"history": chat_history})
+    try:
+        doc_ref = db.collection("chat_histories").document(user_email)
+        doc_ref.set({"history": chat_history})
+    except Exception as e:
+        import traceback
+        import streamlit as st
+        st.error("🔥 Firestore write failed.")
+        st.text("Exception details:")
+        st.text(str(e))
+        st.text("Traceback:")
+        st.text(traceback.format_exc())
+
 
 def load_chat_history(user_email):
     doc_ref = db.collection("chat_histories").document(user_email)
