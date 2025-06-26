@@ -6,12 +6,16 @@ from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
     encoded_key = st.secrets["firebase"]["encoded_key"]
+    print(f"Encoded key length: {len(encoded_key)}")
     decoded_key_json = base64.b64decode(encoded_key).decode("utf-8")
+    print(f"Decoded JSON keys: {list(json.loads(decoded_key_json).keys())}")
     service_account_info = json.loads(decoded_key_json)
     cred = credentials.Certificate(service_account_info)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+print("Firebase app initialized successfully")
+
 
 def save_chat_history(user_email, chat_history):
     try:
