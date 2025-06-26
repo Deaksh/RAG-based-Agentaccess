@@ -21,7 +21,7 @@ def get_vectorstore_for_role(role: str):
     if role in c_level_roles:
         filter_ = None
     else:
-        allowed_roles = ["hr", "general"] if role == "hr" else [role]
+        allowed_roles = ["hr", "general", "employee"] if role == "hr" else [role]
 
         if len(allowed_roles) == 1:
             filter_ = Filter(
