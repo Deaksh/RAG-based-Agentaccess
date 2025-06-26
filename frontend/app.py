@@ -74,8 +74,8 @@ elif st.session_state.role == "admin":
 
 # Regular Chat UI
 else:
-   # st.success(f"🔐 Logged in as: {st.session_state.email} | Role: {st.session_state.role.upper()}")
-    #st.write("➡️ Ask department-specific questions below.")
+    st.success(f"🔐 Logged in as: {st.session_state.email} | Role: {st.session_state.role.upper()}")
+    st.write("➡️ Ask department-specific questions below.")
     #if st.button("📂 Load Previous Chat History"):
      #  loaded_history = load_chat_history(st.session_state.email)
       # if loaded_history:
@@ -105,9 +105,9 @@ else:
             })
 
         answer = response["answer"]
-        st.chat_message("assistant").markdown(answer)
-        st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        save_chat_history(st.session_state.email, st.session_state.chat_history)
+        #st.chat_message("assistant").markdown(answer)
+        #st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        #save_chat_history(st.session_state.email, st.session_state.chat_history)
 
 
         access_denied_phrases = [
