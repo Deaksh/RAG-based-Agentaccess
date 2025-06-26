@@ -8,5 +8,4 @@ sentence-transformers
 python-dotenv
 langchain-huggingface
 firebase-admin
-base64
 
