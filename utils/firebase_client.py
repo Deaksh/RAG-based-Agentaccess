@@ -1,13 +1,13 @@
-import json
 import base64
+import json
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
     encoded_key = st.secrets["firebase"]["encoded_key"]
-    decoded_key = base64.b64decode(encoded_key).decode("utf-8")
-    service_account_info = json.loads(decoded_key)
+    decoded_key_json = base64.b64decode(encoded_key).decode("utf-8")
+    service_account_info = json.loads(decoded_key_json)
     cred = credentials.Certificate(service_account_info)
     firebase_admin.initialize_app(cred)
 
