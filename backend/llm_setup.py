@@ -3,14 +3,15 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 from backend.vectorstore_setup import get_vectorstore_for_role
 from langchain.memory import ConversationBufferMemory
-from dotenv import load_dotenv
-
-load_dotenv()
+import os
 
 def get_qa_chain(user_role: str):
     retriever = get_vectorstore_for_role(user_role)
-
-    llm = ChatGroq(model_name="llama3-70b-8192", temperature=0.2, max_tokens=500)
+    llm = ChatGroq(
+    model_name="llama3-70b-8192",
+    temperature=0.2,
+    max_tokens=500,
+    api_key=os.environ["GROQ_API_KEY"])  # This will raise error if not set, which is good
 
     prompt = PromptTemplate(
         input_variables=["context", "question", "user_role"],
