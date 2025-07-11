@@ -106,7 +106,7 @@ else:
 
         answer = response["answer"]
         st.chat_message("assistant").markdown(answer)
-        #st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        st.session_state.chat_history.append({"role": "assistant", "content": answer})
         #save_chat_history(st.session_state.email, st.session_state.chat_history)
 
 
