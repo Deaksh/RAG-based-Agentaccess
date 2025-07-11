@@ -85,9 +85,9 @@ else:
         #  st.info("No previous chat history found.")
 
 
-    #for msg in st.session_state.chat_history:
-     #   with st.chat_message(msg["role"]):
-      #      st.markdown(msg["content"])
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+             st.markdown(msg["content"])
 
     user_question = st.chat_input("Ask your question")
 
