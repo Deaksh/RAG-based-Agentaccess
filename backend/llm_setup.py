@@ -8,7 +8,7 @@ import os
 def get_qa_chain(user_role: str):
     retriever = get_vectorstore_for_role(user_role)
     llm = ChatGroq(
-    model_name="llama3-70b-8192",
+    model_name="llama-3.3-70b-versatile",
     temperature=0.2,
     max_tokens=500,
     api_key=os.environ["GROQ_API_KEY"])  # This will raise error if not set, which is good
