@@ -1,17 +1,20 @@
 from langchain_groq import ChatGroq
-from langchain.chains import ConversationalRetrievalChain
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import PromptTemplate
 from backend.vectorstore_setup import get_vectorstore_for_role
 from langchain.memory import ConversationBufferMemory
 import os
 
+
 def get_qa_chain(user_role: str):
     retriever = get_vectorstore_for_role(user_role)
     llm = ChatGroq(
-    model_name="llama-3.1-8b-instant",
-    temperature=0.2,
-    max_tokens=500,
-    api_key=os.environ["GROQ_API_KEY"])  # This will raise error if not set, which is good
+        model_name="llama-3.1-8b-instant",
+        temperature=0.2,
+        max_tokens=500,
+        api_key=os.environ["GROQ_API_KEY"],
+    )
 
     prompt = PromptTemplate(
         input_variables=["context", "question", "user_role"],
@@ -46,17 +49,18 @@ Answer:
 """
     )
 
+    # Memory is optional with the new retrieval chain pattern
     memory = ConversationBufferMemory(
-        memory_key="chat_history", return_messages=True, input_key="question", output_key="answer"
+        memory_key="chat_history",
+        return_messages=True,
+        input_key="question",
+        output_key="answer",
     )
 
-    qa_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=retriever,
-        memory=memory,
-        combine_docs_chain_kwargs={"prompt": prompt},
-        return_source_documents=True,
-        chain_type="stuff"
-    )
+    # Create a chain that stuffs retrieved documents into the prompt
+    combine_chain = create_stuff_documents_chain(llm, prompt)
+
+    # Final retrieval-QA chain
+    qa_chain = create_retrieval_chain(retriever, combine_chain)
 
     return qa_chain
