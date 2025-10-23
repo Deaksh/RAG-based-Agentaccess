@@ -1,5 +1,5 @@
 streamlit
-langchain==0.0.247
+langchain
 langchain-community
 langchain-groq
 langchain-qdrant
