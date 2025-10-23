@@ -6,10 +6,7 @@ from langchain.memory import ConversationBufferMemory
 import os
 
 def get_qa_chain(user_role: str):
-    # Get the retriever for the specified user role
     retriever = get_vectorstore_for_role(user_role)
-    
-    # Initialize the Groq LLM
     llm = ChatGroq(
         model_name="llama-3.1-8b-instant",
         temperature=0.2,
@@ -17,7 +14,6 @@ def get_qa_chain(user_role: str):
         api_key=os.environ["GROQ_API_KEY"],
     )
 
-    # Define the prompt template
     prompt = PromptTemplate(
         input_variables=["context", "question", "user_role"],
         template="""
@@ -48,10 +44,8 @@ Context:
 Question: {question}
 
 Answer:
-"""
-    )
+"""    )
 
-    # Set up memory to keep chat history
     memory = ConversationBufferMemory(
         memory_key="chat_history",
         return_messages=True,
@@ -59,7 +53,6 @@ Answer:
         output_key="answer",
     )
 
-    # Create the conversational retrieval chain
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=retriever,
