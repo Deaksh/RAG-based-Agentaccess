@@ -1,6 +1,7 @@
 streamlit
 langchain
 langchain-community
+langchain-classic
 langchain-groq
 langchain-qdrant
 qdrant-client
