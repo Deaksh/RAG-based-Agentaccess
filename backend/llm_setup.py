@@ -1,9 +1,11 @@
-from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
-from backend.vectorstore_setup import get_vectorstore_for_role
+from vectorstore_setup import get_vectorstore_for_role
 from langchain.memory import ConversationBufferMemory
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def get_qa_chain(user_role: str):
