@@ -4,8 +4,6 @@ from langchain.prompts import PromptTemplate
 from backend.vectorstore_setup import get_vectorstore_for_role
 from langchain.memory import ConversationBufferMemory
 import os
-from langchain_classic.chains import ConversationalRetrievalChain
-from langchain_community.chains import ConversationalRetrievalChain
 
 
 def get_qa_chain(user_role: str):
