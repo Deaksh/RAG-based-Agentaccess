@@ -1,5 +1,4 @@
-streamlit
-langchain
+langchain==0.0.340
 langchain-groq
 langchain-qdrant
 qdrant-client
