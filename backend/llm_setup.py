@@ -1,7 +1,8 @@
-from langchain.chains import ConversationalRetrievalChain
-from langchain.prompts import PromptTemplate
+from langchain_community.chains import ConversationalRetrievalChain
+from langchain_core.prompts import PromptTemplate
+from langchain_community.memory import ConversationBufferMemory
+from langchain_groq import ChatGroq  # ← Groq models now live here
 from vectorstore_setup import get_vectorstore_for_role
-from langchain.memory import ConversationBufferMemory
 import os
 from dotenv import load_dotenv
 
@@ -10,6 +11,7 @@ load_dotenv()
 
 def get_qa_chain(user_role: str):
     retriever = get_vectorstore_for_role(user_role)
+
     llm = ChatGroq(
         model_name="llama-3.1-8b-instant",
         temperature=0.2,
@@ -47,7 +49,8 @@ Context:
 Question: {question}
 
 Answer:
-"""    )
+"""
+    )
 
     memory = ConversationBufferMemory(
         memory_key="chat_history",
