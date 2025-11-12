@@ -1,10 +1,14 @@
-from langchain_community.chains import ConversationalRetrievalChain
-from langchain_core.prompts import PromptTemplate
-from langchain_community.memory import ConversationBufferMemory
+# backend/llm_setup.py
+
 from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
+from langchain.memory import ConversationBufferMemory
 from vectorstore_setup import get_vectorstore_for_role
-import os
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -19,9 +23,8 @@ def get_qa_chain(user_role: str):
         api_key=os.environ["GROQ_API_KEY"],
     )
 
-    prompt = PromptTemplate(
-        input_variables=["context", "question", "user_role"],
-        template="""
+    # Build prompt (updated for new LC version)
+    prompt = ChatPromptTemplate.from_template("""
 You are an expert assistant helping users answer questions about internal role-based documents.
 
 Use ONLY the provided context below to answer the question. Do not use any external knowledge.
@@ -49,9 +52,9 @@ Context:
 Question: {question}
 
 Answer:
-"""
-    )
+""")
 
+    # Initialize conversational memory (still supported)
     memory = ConversationBufferMemory(
         memory_key="chat_history",
         return_messages=True,
@@ -59,13 +62,27 @@ Answer:
         output_key="answer",
     )
 
-    qa_chain = ConversationalRetrievalChain.from_llm(
+    # Create a documents → LLM pipeline
+    question_answer_chain = create_stuff_documents_chain(
         llm=llm,
-        retriever=retriever,
-        memory=memory,
-        combine_docs_chain_kwargs={"prompt": prompt},
-        return_source_documents=True,
-        chain_type="stuff"
+        prompt=prompt
     )
 
-    return qa_chain
+    # Combine retriever + chain (modern RAG pattern)
+    rag_chain = create_retrieval_chain(
+        retriever=retriever,
+        combine_docs_chain=question_answer_chain
+    )
+
+    # Wrap with a simple output parser to maintain backward compatibility
+    full_chain = (
+        {
+            "question": lambda x: x["question"],
+            "context": lambda x: x.get("context", ""),
+            "user_role": lambda x: user_role,
+        }
+        | rag_chain
+        | StrOutputParser()
+    )
+
+    return full_chain
