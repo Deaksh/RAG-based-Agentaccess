@@ -1,7 +1,8 @@
-from langchain_community.chains import ConversationalRetrievalChain
+
+from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts import PromptTemplate
 from langchain_community.memory import ConversationBufferMemory
-from langchain_groq import ChatGroq  # ← Groq models now live here
+from langchain_groq import ChatGroq
 from vectorstore_setup import get_vectorstore_for_role
 import os
 from dotenv import load_dotenv
