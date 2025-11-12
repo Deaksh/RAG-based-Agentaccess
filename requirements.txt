@@ -1,10 +1,25 @@
-streamlit
-langchain>=0.2.10
-langchain-community>=0.2.10
+# --- Core Framework ---
+streamlit==1.38.0
+
+# --- LangChain Ecosystem (explicitly pinned for uv installer) ---
+langchain==0.2.16
+langchain-core==0.2.37
+langchain-community==0.2.16
+langchain-text-splitters==0.2.2
+
+# --- Integrations ---
 langchain-groq>=0.2.0
 langchain-qdrant>=1.1.0
-qdrant-client
-sentence-transformers
-python-dotenv
-langchain-huggingface
-firebase-admin
+langchain-huggingface>=0.0.3
+
+# --- Vector Store + Embeddings ---
+qdrant-client==1.9.1
+sentence-transformers==3.0.1
+
+# --- Utilities ---
+python-dotenv==1.0.1
+firebase-admin==6.5.0
+tiktoken==0.7.0
+
+# --- Optional: helpful for debugging & local runs ---
+requests==2.32.3
