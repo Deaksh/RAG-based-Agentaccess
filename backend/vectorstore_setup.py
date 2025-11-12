@@ -3,7 +3,14 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny, VectorParams, PayloadSchemaType
+from qdrant_client.models import (
+    Filter,
+    FieldCondition,
+    MatchValue,
+    MatchAny,
+    VectorParams,
+    PayloadSchemaType,
+)
 import os
 from dotenv import load_dotenv
 
@@ -12,7 +19,8 @@ load_dotenv()
 QDRANT_COLLECTION = "finrolebot"
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # ✅ canonical name
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # ✅ canonical model name
+
 
 def get_vectorstore_for_role(role: str):
     role = role.lower()
@@ -28,7 +36,7 @@ def get_vectorstore_for_role(role: str):
                 must=[
                     FieldCondition(
                         key="metadata.role",
-                        match=MatchValue(value=allowed_roles[0])
+                        match=MatchValue(value=allowed_roles[0]),
                     )
                 ]
             )
@@ -37,7 +45,7 @@ def get_vectorstore_for_role(role: str):
                 must=[
                     FieldCondition(
                         key="metadata.role",
-                        match=MatchAny(any=allowed_roles)
+                        match=MatchAny(any=allowed_roles),
                     )
                 ]
             )
@@ -49,11 +57,11 @@ def get_vectorstore_for_role(role: str):
 def get_vectorstore(filter_metadata=None):
     client = QdrantClient(
         url=QDRANT_URL,
-        api_key=QDRANT_API_KEY
+        api_key=QDRANT_API_KEY,
     )
 
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vector_size = 384  # all-MiniLM-L6-v2
+    vector_size = 384  # all-MiniLM-L6-v2 → produces 384-dim embeddings
 
     existing_collections = [col.name for col in client.get_collections().collections]
     collection_exists = QDRANT_COLLECTION in existing_collections
@@ -62,24 +70,24 @@ def get_vectorstore(filter_metadata=None):
         print(f"🛠 Creating collection: {QDRANT_COLLECTION}")
         client.create_collection(
             collection_name=QDRANT_COLLECTION,
-            vectors_config=VectorParams(size=vector_size, distance="Cosine")
+            vectors_config=VectorParams(size=vector_size, distance="Cosine"),
         )
 
-    # Ensure payload index for metadata.role
-    payload_schema = getattr(client.get_collection(QDRANT_COLLECTION), "payload_schema", {})
+    # Ensure payload index for metadata.role (optional defensive check)
+    collection_info = client.get_collection(QDRANT_COLLECTION)
+    payload_schema = getattr(collection_info, "payload_schema", {}) or {}
     if "metadata.role" not in payload_schema:
         print("🔧 Creating payload index for metadata.role...")
         client.create_payload_index(
             collection_name=QDRANT_COLLECTION,
             field_name="metadata.role",
-            field_schema=PayloadSchemaType.KEYWORD
+            field_schema=PayloadSchemaType.KEYWORD,
         )
 
     vectordb = QdrantVectorStore(
         client=client,
         collection_name=QDRANT_COLLECTION,
         embedding=embedding_model,
-        vector_name="",  # default unnamed vectors
     )
 
     retriever = vectordb.as_retriever(
