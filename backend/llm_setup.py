@@ -3,8 +3,8 @@
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.combine_documents_chain import create_stuff_documents_chain
+from langchain.chains.retrieval_chain import create_retrieval_chain
 from langchain.memory import ConversationBufferMemory
 from vectorstore_setup import get_vectorstore_for_role
 from dotenv import load_dotenv
@@ -53,19 +53,19 @@ Question: {question}
 Answer:
 """)
 
-    # ✅ Create the inner "stuff documents" chain
+    # ✅ Create the inner chain
     question_answer_chain = create_stuff_documents_chain(
         llm=llm,
         prompt=prompt,
     )
 
-    # ✅ Create the full retrieval chain (new API)
+    # ✅ Create the full retrieval chain (new API in 0.2.x)
     rag_chain = create_retrieval_chain(
         retriever=retriever,
         combine_docs_chain=question_answer_chain,
     )
 
-    # ✅ Keep a simple memory buffer for context continuity
+    # ✅ Optional memory for conversation continuity
     memory = ConversationBufferMemory(
         memory_key="chat_history",
         return_messages=True,
@@ -73,7 +73,6 @@ Answer:
         output_key="answer",
     )
 
-    # ✅ Combine retrieval + output parser for final response
     full_chain = (
         {
             "question": lambda x: x["question"],
