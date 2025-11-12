@@ -1,5 +1,4 @@
-
-from langchain.chains import ConversationalRetrievalChain
+from langchain_community.chains import ConversationalRetrievalChain
 from langchain_core.prompts import PromptTemplate
 from langchain_community.memory import ConversationBufferMemory
 from langchain_groq import ChatGroq
