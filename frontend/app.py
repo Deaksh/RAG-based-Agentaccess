@@ -101,6 +101,7 @@ else:
             response = qa_chain.invoke({
                 "question": user_question,
                 "user_role": st.session_state.role,
+                "context": "",
                 "chat_history": st.session_state.chat_history
             })
 
