@@ -105,8 +105,7 @@ else:
             # ✅ Removed chat_history argument to prevent KeyError
             response = qa_chain.invoke({
                 "question": user_question,
-                "user_role": st.session_state.role,
-                "context": ""
+                "user_role": st.session_state.role
             })
 
         # ✅ Handle both dict or string output gracefully
