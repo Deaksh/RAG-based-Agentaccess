@@ -7,10 +7,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.memory import ConversationBufferMemory
 from vectorstore_setup import get_vectorstore_for_role
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 
 def get_qa_chain(user_role: str):
