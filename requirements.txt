@@ -5,7 +5,6 @@ qdrant-client>=1.10.1,<2.0.0
 sentence-transformers==3.0.1
 python-dotenv==1.0.1
 firebase-admin==6.5.0
-tiktoken==0.7.0
 requests==2.32.3
 langchain==0.3.25
 langchain-community==0.3.25
