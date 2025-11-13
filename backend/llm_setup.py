@@ -81,7 +81,7 @@ Answer:
     | rag_chain
     | StrOutputParser()
     )
-
-
+    # ✅ Debug log
+    print("✅ QA chain ready with expected keys:", prompt.input_variables)
 
     return full_chain
