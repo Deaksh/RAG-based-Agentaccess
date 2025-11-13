@@ -74,14 +74,17 @@ Answer:
     )
 
     # ✅ Combine retrieval + output parser for final structured output
+    from langchain_core.runnables import RunnablePassthrough
+
     full_chain = (
         {
-            "input": lambda x: x["question"],
+            "input": lambda x: x["question"],     # main question input
+            "user_role": RunnablePassthrough.assign(user_role=user_role),
             "context": lambda x: x.get("context", ""),
-            "user_role": lambda x: user_role,
         }
         | rag_chain
         | StrOutputParser()
     )
+
 
     return full_chain
