@@ -1,5 +1,3 @@
-# frontend/app.py
-
 import os
 import sys
 import streamlit as st
@@ -10,20 +8,26 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../back
 
 from backend.llm_setup import get_qa_chain
 from utils.auth import authenticate_user, register_user, list_users
-#from utils.firebase_client import save_chat_history, load_chat_history
+# from utils.firebase_client import save_chat_history, load_chat_history
 
-
+# ------------------------------
+# Streamlit Page Configuration
+# ------------------------------
 st.set_page_config(page_title="FinSolve Assistant", page_icon="💼", layout="wide")
 st.title("💼 FinSolve Role-Based Assistant")
 st.subheader("Login to access your department-specific insights")
 
-# Session state initialization
+# ------------------------------
+# Session State Initialization
+# ------------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Login flow
+# ------------------------------
+# Login Flow
+# ------------------------------
 if not st.session_state.logged_in:
     with st.form("login_form"):
         email = st.text_input("Email")
@@ -36,13 +40,15 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.email = email
                 st.session_state.role = role.strip().lower()
-                st.session_state.chat_history = []  # 🚨 Auto-clear previous history
+                st.session_state.chat_history = []  # Clear previous session
                 st.success(f"✅ Logged in as {role.upper()}")
                 st.rerun()
             else:
                 st.error("❌ Invalid credentials. Please try again.")
 
+# ------------------------------
 # Admin Console
+# ------------------------------
 elif st.session_state.role == "admin":
     st.success(f"👑 Admin logged in: {st.session_state.email}")
     st.header("🔧 Admin Dashboard")
@@ -72,68 +78,75 @@ elif st.session_state.role == "admin":
         st.session_state.logged_in = False
         st.rerun()
 
+# ------------------------------
 # Regular Chat UI
+# ------------------------------
 else:
     st.success(f"🔐 Logged in as: {st.session_state.email} | Role: {st.session_state.role.upper()}")
     st.write("➡️ Ask department-specific questions below.")
-    #if st.button("📂 Load Previous Chat History"):
-     #  loaded_history = load_chat_history(st.session_state.email)
-      # if loaded_history:
-       #   st.session_state.chat_history = loaded_history
-        #  st.experimental_rerun()
-       #else:
-        #  st.info("No previous chat history found.")
 
-
+    # Display previous messages
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
-             st.markdown(msg["content"])
+            st.markdown(msg["content"])
 
+    # User input
     user_question = st.chat_input("Ask your question")
 
     if user_question:
+        # Display user message
         st.chat_message("user").markdown(user_question)
         st.session_state.chat_history.append({"role": "user", "content": user_question})
 
+        # Initialize chain
         qa_chain = get_qa_chain(st.session_state.role)
 
         with st.spinner("🔍 Searching your documents..."):
+            # ✅ Removed chat_history argument to prevent KeyError
             response = qa_chain.invoke({
                 "question": user_question,
                 "user_role": st.session_state.role,
-                "context": "",
-                "chat_history": st.session_state.chat_history
+                "context": ""
             })
 
-        answer = response["answer"]
+        # ✅ Handle both dict or string output gracefully
+        if isinstance(response, dict):
+            answer = response.get("answer", str(response))
+        else:
+            answer = str(response)
+
+        # Display assistant message
         st.chat_message("assistant").markdown(answer)
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        #save_chat_history(st.session_state.email, st.session_state.chat_history)
 
+        # Optional: show sources if available
+        if isinstance(response, dict) and "source_documents" in response:
+            access_denied_phrases = [
+                "you do not have permission",
+                "this question seems related to a different department"
+            ]
 
-        access_denied_phrases = [
-            "you do not have permission",
-            "this question seems related to a different department"
-        ]
+            if not any(phrase in answer.lower() for phrase in access_denied_phrases):
+                st.markdown("### 📚 Sources")
+                for i, doc in enumerate(response["source_documents"]):
+                    metadata = doc.metadata
+                    source = metadata.get("source", "Unknown")
+                    role = metadata.get("role", "Unknown")
+                    content = doc.page_content.strip()
+                    st.markdown(f"- **Filename**: {source}")
+                    st.markdown(f"  **Role**: {role}")
+                    with st.expander(f"{i + 1}. {source} ({role})"):
+                        st.markdown(f"> {content[:500]}...")
+            else:
+                st.info("🔒 No document sources shown due to access restrictions.")
 
-        if not any(phrase in answer.lower() for phrase in access_denied_phrases):
-            st.markdown("### 📚 Sources")
-            for i, doc in enumerate(response["source_documents"]):
-                metadata = doc.metadata
-                source = metadata.get("source", "Unknown")
-                role = metadata.get("role", "Unknown")
-                content = doc.page_content.strip()
-                st.markdown(f"- **Filename**: {source}")
-                st.markdown(f"  **Role**: {role}")
-                with st.expander(f"{i + 1}. {source} ({role})"):
-                    st.markdown(f"> {content[:500]}...")
-        else:
-            st.info("🔒 No document sources shown due to access restrictions.")
-
-    if st.button("🧹 Clear Chat"):
-        st.session_state.chat_history = []
-        st.rerun()
-
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+    # Utility Buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🧹 Clear Chat"):
+            st.session_state.chat_history = []
+            st.rerun()
+    with col2:
+        if st.button("Logout"):
+            st.session_state.logged_in = False
+            st.rerun()
