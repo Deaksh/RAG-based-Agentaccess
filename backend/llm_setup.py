@@ -1,77 +1,69 @@
-# backend/llm_setup.py
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.memory import ConversationBufferMemory
+from langchain_community.chains.combine_documents_chain import create_stuff_documents_chain
+from langchain_community.chains.retrieval_chain import create_retrieval_chain
 from vectorstore_setup import get_vectorstore_for_role
+from dotenv import load_dotenv
 import os
 
+load_dotenv()
+
+# Initialize LLM safely
+llm = ChatGroq(
+    model="llama-3.1-70b-versatile",
+    temperature=0.3,
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 def get_qa_chain(user_role: str):
-    retriever = get_vectorstore_for_role(user_role)
-
-    llm = ChatGroq(
-        model_name="llama-3.1-8b-instant",
-        temperature=0.2,
-        max_tokens=500,
-        api_key=os.environ["GROQ_API_KEY"],
-    )
+    """
+    Returns a retrieval-based QA chain tailored to the given user role.
+    """
+    vectorstore = get_vectorstore_for_role(user_role)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
     prompt = ChatPromptTemplate.from_template("""
-You are an expert assistant helping users answer questions about internal role-based documents.
-
-Use ONLY the provided context below to answer the question. Do not use any external knowledge.
-
-If the answer cannot be found in the context, assume the user may be asking about another department’s documents.
-In that case, respond with:
-
-"You do not have permission to access this information.
-🔒 Your role: {user_role}
-This question seems related to a different department.
-👉 Please rephrase your question within the scope of your department."
-
-Try to:
-- Be concise and factual.
-- Format the answer in bullet points or short paragraphs.
-- Mention the role and filename when relevant, using metadata if available.
-
----
+You are FinSolve AI Assistant. Your job is to answer user questions based only on the provided context. 
+Each user has a specific department role: {user_role}. 
+If the question is outside their department's access, politely refuse.
 
 Context:
 {context}
 
----
-
 Question: {question}
 
-Answer:
+Answer concisely and professionally for the {user_role} department.
 """)
 
-    # ✅ Core QA chain that expects `context` + `question` + `user_role`
-    question_answer_chain = create_stuff_documents_chain(
+    # Create base chain
+    document_chain = create_stuff_documents_chain(
         llm=llm,
         prompt=prompt,
+        output_parser=StrOutputParser()
     )
 
-    # ✅ Retrieval chain that expects input as `input`
-    rag_chain = create_retrieval_chain(
+    # Create retrieval chain
+    retrieval_chain = create_retrieval_chain(
         retriever=retriever,
-        combine_docs_chain=question_answer_chain,
+        combine_docs_chain=document_chain
     )
 
-    # ✅ Final bridging chain (maps user input → retriever input → prompt variables)
-    full_chain = (
-        {
-            "input": lambda x: x["question"],  # retriever wants `input`
-            "question": lambda x: x["question"],  # prompt wants `question`
-            "context": lambda x: x.get("context", ""),
-            "user_role": lambda _: user_role,
-        }
-        | rag_chain
-        | StrOutputParser()
-    )
+    # ✅ Wrap in a clean function to avoid ValidationError
+    def safe_invoke(inputs: dict):
+        try:
+            result = retrieval_chain.invoke(inputs)
+            # Ensure output is a string — handle models that return structured data
+            if isinstance(result, dict):
+                answer = result.get("answer") or result.get("result") or str(result)
+            else:
+                answer = str(result)
+            return {
+                "answer": answer,
+                "source_documents": result.get("context", []) if isinstance(result, dict) else []
+            }
+        except Exception as e:
+            return {"answer": f"⚠️ Internal Error: {str(e)}", "source_documents": []}
 
-    print("✅ QA chain ready with expected keys:", prompt.input_variables)
-    return full_chain
+    retrieval_chain.invoke = safe_invoke
+    return retrieval_chain
