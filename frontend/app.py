@@ -104,7 +104,7 @@ else:
         with st.spinner("🔍 Searching your documents..."):
             # ✅ Removed chat_history argument to prevent KeyError
             response = qa_chain.invoke({
-                "question": user_question,
+                "input": user_question,
                 "user_role": st.session_state.role
             })
 
