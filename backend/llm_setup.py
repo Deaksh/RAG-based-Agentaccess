@@ -73,25 +73,34 @@ Answer concisely and professionally for the {user_role} department.
 
     # ✅ Safe wrapper for robust output
     class SafeQAWrapper:
-        def __init__(self, chain):
-            self.chain = chain
+    def __init__(self, chain):
+        self.chain = chain
 
-        def invoke(self, inputs: dict):
-            try:
-                print("🧩 Invoked with:", inputs)
-                result = self.chain.invoke(inputs)
-                print("✅ Chain result:", result)
+    def invoke(self, inputs: dict):
+        try:
+            print("🧩 Invoked with:", inputs)
+            result = self.chain.invoke(inputs)
+            print("✅ Chain result:", result)
 
-                # Extract answer and sources
-                if isinstance(result, dict):
-                    answer = result.get("answer") or result.get("result") or str(result)
-                    source_docs = result.get("source_documents") or []
-                else:
-                    answer, source_docs = str(result), []
-                return {"answer": answer, "source_documents": source_docs}
-            except Exception as e:
-                print("❌ Internal error:", e)
-                return {"answer": f"⚠️ Internal Error: {str(e)}", "source_documents": []}
+            # Extract answer and sources
+            if isinstance(result, dict):
+                answer = result.get("answer") or result.get("result") or str(result)
+                # Handle both possible key names for docs
+                source_docs = result.get("source_documents") or result.get("context") or []
+            else:
+                answer, source_docs = str(result), []
+
+            # Normalize context text into list of pseudo-docs if needed
+            if isinstance(source_docs, str):
+                source_docs = [{"metadata": {"source": "retrieved context"}, "page_content": source_docs}]
+            elif isinstance(source_docs, list) and all(isinstance(d, str) for d in source_docs):
+                source_docs = [{"metadata": {"source": f"Doc {i+1}"}, "page_content": d} for i, d in enumerate(source_docs)]
+
+            return {"answer": answer, "source_documents": source_docs}
+
+        except Exception as e:
+            print("❌ Internal error:", e)
+            return {"answer": f"⚠️ Internal Error: {str(e)}", "source_documents": []}
 
     print(f"✅ QA chain ready for role: {user_role}")
     return SafeQAWrapper(retrieval_chain)
