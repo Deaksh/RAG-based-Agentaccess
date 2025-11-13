@@ -74,7 +74,7 @@ Answer:
 
     full_chain = (
     {
-        "input": lambda x: x["question"],
+        "question": lambda x: x["question"],
         "context": lambda x: x.get("context", ""),
         "user_role": lambda _: user_role,  # just inject the static value
     }
