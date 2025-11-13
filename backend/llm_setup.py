@@ -10,35 +10,51 @@ import os
 
 load_dotenv()
 
-# Initialize LLM
-llm = ChatGroq(
-    model="llama-3.1-70b-versatile",
-    temperature=0.3,
-    api_key=os.getenv("GROQ_API_KEY")
-)
-
 def get_qa_chain(user_role: str):
     """
-    Returns a retrieval-based QA chain tailored to the given user role.
+    Returns a retrieval-based QA chain for the given user role.
     """
-    vectorstore = get_vectorstore_for_role(user_role)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+    vectorstore_or_retriever = get_vectorstore_for_role(user_role)
+
+    # ✅ Handle both vectorstore and retriever cases safely
+    if hasattr(vectorstore_or_retriever, "as_retriever"):
+        retriever = vectorstore_or_retriever.as_retriever(search_kwargs={"k": 3})
+    else:
+        retriever = vectorstore_or_retriever  # already a retriever
+
+    llm = ChatGroq(
+        model_name="llama-3.1-8b-instant",
+        temperature=0.2,
+        max_tokens=500,
+        api_key=os.environ["GROQ_API_KEY"],
+    )
 
     prompt = ChatPromptTemplate.from_template("""
-You are FinSolve AI Assistant. Your job is to answer user questions based only on the provided context.
-Each user has a specific department role: {user_role}.
-If the question is outside their department's access, politely refuse.
+You are FinSolve AI Assistant. You answer questions based only on the provided context.
+
+Each user has a department role: {user_role}.
+If the question seems unrelated to their department, politely refuse access.
+
+---
 
 Context:
 {context}
+
+---
 
 Question: {question}
 
 Answer concisely and professionally for the {user_role} department.
 """)
 
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+        input_key="question",
+        output_key="answer",
+    )
 
+    # ✅ Create chain parts
     document_chain = create_stuff_documents_chain(
         llm=llm,
         prompt=prompt,
@@ -47,24 +63,26 @@ Answer concisely and professionally for the {user_role} department.
 
     retrieval_chain = create_retrieval_chain(
         retriever=retriever,
-        combine_docs_chain=document_chain
+        combine_docs_chain=document_chain,
     )
 
-    # ✅ Wrap in safe invoke to prevent pydantic_core validation errors
+    # ✅ Safe invoke to prevent pydantic_core validation issues
     def safe_invoke(inputs: dict):
         try:
             result = retrieval_chain.invoke(inputs)
             if isinstance(result, dict):
                 answer = result.get("answer") or result.get("result") or str(result)
+                source_docs = result.get("context") or result.get("source_documents") or []
             else:
-                answer = str(result)
+                answer, source_docs = str(result), []
 
             return {
                 "answer": answer,
-                "source_documents": result.get("context", []) if isinstance(result, dict) else []
+                "source_documents": source_docs
             }
         except Exception as e:
             return {"answer": f"⚠️ Internal Error: {str(e)}", "source_documents": []}
 
     retrieval_chain.invoke = safe_invoke
+    print(f"✅ QA chain ready for role: {user_role}")
     return retrieval_chain
