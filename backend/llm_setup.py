@@ -76,7 +76,7 @@ Answer:
     # ✅ Combine retrieval + output parser for final structured output
     full_chain = (
         {
-            "question": lambda x: x["question"],
+            "input": lambda x: x["question"],
             "context": lambda x: x.get("context", ""),
             "user_role": lambda x: user_role,
         }
