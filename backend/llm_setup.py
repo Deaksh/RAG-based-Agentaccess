@@ -1,5 +1,4 @@
 # backend/llm_setup.py
-
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -50,38 +49,29 @@ Question: {question}
 Answer:
 """)
 
-    # ✅ Create the inner "stuff documents" chain
+    # ✅ Core QA chain that expects `context` + `question` + `user_role`
     question_answer_chain = create_stuff_documents_chain(
         llm=llm,
         prompt=prompt,
     )
 
-    # ✅ Create the full retrieval chain (from langchain_community)
+    # ✅ Retrieval chain that expects input as `input`
     rag_chain = create_retrieval_chain(
         retriever=retriever,
         combine_docs_chain=question_answer_chain,
     )
 
-    # ✅ Add memory for conversation continuity
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True,
-        input_key="question",
-        output_key="answer",
-    )
-
-    # ✅ Combine retrieval + output parser for final structured output
-
+    # ✅ Final bridging chain (maps user input → retriever input → prompt variables)
     full_chain = (
-    {
-        "question": lambda x: x["question"],
-        "context": lambda x: x.get("context", ""),
-        "user_role": lambda _: user_role,  # just inject the static value
-    }
-    | rag_chain
-    | StrOutputParser()
+        {
+            "input": lambda x: x["question"],  # retriever wants `input`
+            "question": lambda x: x["question"],  # prompt wants `question`
+            "context": lambda x: x.get("context", ""),
+            "user_role": lambda _: user_role,
+        }
+        | rag_chain
+        | StrOutputParser()
     )
-    # ✅ Debug log
-    print("✅ QA chain ready with expected keys:", prompt.input_variables)
 
+    print("✅ QA chain ready with expected keys:", prompt.input_variables)
     return full_chain
